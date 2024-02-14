@@ -1,13 +1,14 @@
 const { getAuth } = require("firebase-admin/auth");
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
 
 const authenticationMiddleware = async (req, res, next) => {
+  const { prisma } = req.context;
   const regex = /Bearer (.+)/i;
 
   try {
-    const token = req.headers["authorization"].match(regex)?.[1];
+    const token = req.headers["authorization"]?.match(regex)?.[1] || "";
+
+    if (!token) throw { code: "unauthenticated" };
+
     const verified = await getAuth().verifyIdToken(token);
 
     const session = await prisma.user.findUnique({
@@ -23,10 +24,17 @@ const authenticationMiddleware = async (req, res, next) => {
       },
     });
 
-    req.session = session;
+    req.context = { ...req.context, session };
     next();
   } catch (error) {
-    res.status(401).json({ error: { code: "unauthenticated" } });
+    const { code } = error;
+    if (
+      code === "unauthenticated" ||
+      code === "auth/id-token-expired" ||
+      code === "auth/argument-error"
+    )
+      return res.status(401).json({ error: { code: "unauthenticated" } });
+    return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
 

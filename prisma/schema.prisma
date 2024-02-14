@@ -10,9 +10,33 @@ generator client {
 model User {
     id String @id @default(auto()) @map("_id") @db.ObjectId
     uid String @unique
+    conversationIds String[] @db.ObjectId
     displayName String
-    email String
+    email String @unique
     photoUrl String?
     emailVerified Boolean
     createdAt DateTime
+    updatedAt DateTime @updatedAt
+
+    conversations Conversation[] @relation(fields: [conversationIds], references: [id])
+}
+
+model Conversation {
+    id String @id @default(auto()) @map("_id") @db.ObjectId
+    participantIds String[] @db.ObjectId
+    userSeen String[] @db.ObjectId
+    name String?
+    image String?
+    message Message[]
+    createdBy String @db.ObjectId
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    participants User[] @relation(fields: [participantIds], references: [id])
+}
+
+type Message {
+    userId String @db.ObjectId @map("_id")
+    content String
+    createdAt DateTime @default(now())
 }

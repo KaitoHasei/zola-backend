@@ -6,31 +6,28 @@ const {
   sendEmailVerification,
 } = require("firebase/auth");
 
-const { PrismaClient } = require("@prisma/client");
-
-const prisma = new PrismaClient();
-
 exports.register = async (req, res) => {
-  const { username = "", email, password } = req.body;
+  const { prisma } = req.context;
+  const { username = "", email = "", password = "" } = req.body;
 
   try {
     if (!username.trim()) throw { code: "auth/invalid-username" };
 
     const auth = getAuth();
-    const credential = await createUserWithEmailAndPassword(
+    const credentials = await createUserWithEmailAndPassword(
       auth,
       email,
       password
     );
 
-    if (credential && auth.currentUser) {
+    if (credentials && auth.currentUser) {
       await sendEmailVerification(auth.currentUser);
       await updateProfile(auth.currentUser, {
         displayName: username,
       });
     }
 
-    const { user } = credential;
+    const { user } = credentials;
 
     await prisma.user.create({
       data: {
@@ -61,14 +58,15 @@ exports.register = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  const { email, password } = req.body;
+  const { email = "", password = "" } = req.body;
 
   try {
     const auth = getAuth();
 
-    const credential = await signInWithEmailAndPassword(auth, email, password);
+    const credentials = await signInWithEmailAndPassword(auth, email, password);
 
-    if (!credential.user.emailVerified) throw { code: "auth/email-not-verify" };
+    if (!credentials.user.emailVerified)
+      throw { code: "auth/email-not-verify" };
 
     const token = await auth.currentUser.getIdToken();
 
