@@ -36,7 +36,7 @@ model Conversation {
 }
 
 type Message {
-    userId String @db.ObjectId @map("_id")
+    userId String @db.ObjectId
     content String
     createdAt DateTime @default(now())
 }
