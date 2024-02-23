@@ -1,7 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-const authenticationMiddleware = require("../middleware/authentication.middleware");
+const {
+  authenticationMiddleware,
+} = require("../middleware/authentication.middleware");
 const conversationController = require("../controllers/conversation");
 const messageController = require("../controllers/message");
 

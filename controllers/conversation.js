@@ -1,6 +1,6 @@
 const _ = require("lodash");
 
-const { checkUserInConversation } = require("../utils");
+const { checkUserInConversation, convertRawData } = require("../utils");
 
 exports.post = async (req, res) => {
   const { session, prisma } = req.context;
@@ -11,7 +11,7 @@ exports.post = async (req, res) => {
       !participantId ||
       (_.isArray(participantId) && _.isEmpty(participantId))
     )
-      throw { code: "require-participant" };
+      throw { code: "invalid-participant" };
 
     let conversationId = "";
 
@@ -57,7 +57,7 @@ exports.post = async (req, res) => {
   } catch (error) {
     const { code } = error;
 
-    if (code === "require-participant")
+    if (code === "invalid-participant")
       return res.status(400).json({ error: { code } });
 
     return res.status(500).json({ error: { code: "something went wrong" } });
@@ -70,36 +70,52 @@ exports.list = async (req, res) => {
   const pageSize = parseInt(req.query.pageSize) || 10;
 
   try {
-    const conversations = await prisma.conversation.findMany({
-      where: {
-        participantIds: {
-          has: session.id,
-        },
-      },
-      select: {
-        id: true,
-        participants: {
-          select: {
-            id: true,
-            displayName: true,
-            photoUrl: true,
+    const rawConversations = await prisma.conversation.aggregateRaw({
+      pipeline: [
+        {
+          $match: {
+            message: {
+              $exists: true,
+            },
+            $expr: {
+              $in: [{ $oid: session.id }, "$participantIds"],
+            },
           },
         },
-        name: true,
-        image: true,
-        userSeen: true,
-        message: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-      orderBy: {
-        updatedAt: "desc",
-      },
-      skip: page * pageSize,
-      take: pageSize,
+        { $sort: { updatedAt: -1, "message.createdAt": 1 } },
+        { $skip: page * pageSize },
+        { $limit: pageSize },
+        {
+          $lookup: {
+            from: "User",
+            localField: "participantIds",
+            foreignField: "_id",
+            as: "participants",
+            pipeline: [
+              {
+                $project: {
+                  _id: 1,
+                  displayName: 1,
+                  photoUrl: 1,
+                },
+              },
+            ],
+          },
+        },
+        { $addFields: { latestMessage: { $last: "$message" } } },
+        {
+          $project: {
+            participantIds: 0,
+            message: 0,
+            createdAt: 0,
+          },
+        },
+      ],
     });
 
-    return res.status(200).json({ list: conversations });
+    const convertedConversations = convertRawData(rawConversations);
+
+    return res.status(200).json({ list: convertedConversations });
   } catch (error) {
     return res.status(500).json({ error: { code: "something went wrong!" } });
   }
@@ -110,14 +126,14 @@ exports.get = async (req, res) => {
   const { conversationId = "" } = req.params;
 
   try {
-    if (!conversationId) throw { code: "require-conversationId" };
+    if (!conversationId) throw { code: "invalid-conversationId" };
 
     const isInConversation = await checkUserInConversation(
       conversationId,
       req.context
     );
 
-    if (!isInConversation) throw { code: "not-in-conversation" };
+    if (!isInConversation) throw { code: "conversation-not-exist" };
 
     const conversation = await prisma.conversation.findUnique({
       where: {
@@ -144,9 +160,9 @@ exports.get = async (req, res) => {
   } catch (error) {
     const { code } = error;
 
-    if (code === "require-conversationId")
+    if (code === "invalid-conversationId")
       return res.status(400).json({ error: { code } });
-    else if (code === "not-in-conversation")
+    else if (code === "conversation-not-exist")
       return res.status(403).json({ error: { code } });
 
     return res.status(500).json({ error: { code: "something went wrong!" } });

@@ -65,8 +65,8 @@ exports.login = async (req, res) => {
 
     const credentials = await signInWithEmailAndPassword(auth, email, password);
 
-    if (!credentials.user.emailVerified)
-      throw { code: "auth/email-not-verify" };
+    // if (!credentials.user.emailVerified)
+    //   throw { code: "auth/email-not-verify" };
 
     const token = await auth.currentUser.getIdToken();
 
@@ -75,6 +75,7 @@ exports.login = async (req, res) => {
     const { code } = err;
     if (
       code === "auth/wrong-password" ||
+      code === "auth/invalid-credential" ||
       code === "auth/user-not-found" ||
       code === "auth/email-not-verify"
     ) {

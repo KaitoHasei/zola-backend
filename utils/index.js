@@ -4,20 +4,16 @@ const _ = require("lodash");
 exports.checkUserInConversation = async (conversationId, context) => {
   const { session, prisma } = context;
 
-  try {
-    const numberExists = await prisma.conversation.count({
-      where: {
-        id: conversationId,
-        participantIds: {
-          has: session.id,
-        },
+  const numberExists = await prisma.conversation.count({
+    where: {
+      id: conversationId,
+      participantIds: {
+        has: session.id,
       },
-    });
+    },
+  });
 
-    return numberExists ? true : false;
-  } catch (error) {
-    console.log(error);
-  }
+  return numberExists ? true : false;
 };
 
 const convertRawData = (data) => {

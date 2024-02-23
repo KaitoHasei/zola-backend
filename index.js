@@ -1,3 +1,4 @@
+const { createServer } = require("http");
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -9,6 +10,11 @@ const { PrismaClient } = require("@prisma/client");
 const config = require("./config/environment");
 const ServiceAccount = require("./service-account.json");
 const { firebaseConfig } = require("./config/firebase.config");
+
+const { socket, chatConnection, rootConnection } = require("./sockets");
+const {
+  socketAuthMiddleware,
+} = require("./middleware/authentication.middleware");
 
 //route
 const auth = require("./routes/auth");
@@ -23,6 +29,22 @@ admin.initializeApp({
 initializeApp(firebaseConfig);
 
 const app = express();
+const httpServer = createServer(app);
+
+const io = socket(httpServer);
+
+io.use((socket, next) => {
+  socket.request.context = {
+    prisma,
+  };
+
+  next();
+});
+
+io.use(socketAuthMiddleware);
+
+io.on("connection", rootConnection);
+io.of("/chats").on("connection", chatConnection);
 
 app.use(morgan("combined"));
 app.use(cors());
@@ -33,6 +55,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use((req, res, next) => {
   req.context = {
     prisma,
+    io,
   };
   next();
 });

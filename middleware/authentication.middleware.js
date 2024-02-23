@@ -38,4 +38,37 @@ const authenticationMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = authenticationMiddleware;
+const socketAuthMiddleware = async (socket, next) => {
+  const { prisma } = socket.request.context;
+
+  const regex = /Bearer (.+)/i;
+
+  try {
+    const token =
+      socket.request.headers["authorization"]?.match(regex)?.[1] || "";
+
+    if (!token) throw { code: "unauthenticated" };
+
+    const verified = await getAuth().verifyIdToken(token);
+
+    const session = await prisma.user.findUnique({
+      where: {
+        uid: verified.uid,
+      },
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+        photoUrl: true,
+        createdAt: true,
+      },
+    });
+
+    socket.request.context = { ...socket.request.context, session };
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { authenticationMiddleware, socketAuthMiddleware };

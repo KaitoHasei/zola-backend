@@ -22,7 +22,7 @@ exports.find = async (req, res) => {
   ];
 
   try {
-    if (!email.trim()) throw { code: "require email term" };
+    if (!email.trim()) throw { code: "invalid-term" };
 
     if (excludePatterns.includes(email))
       return res.status(200).json({ list: [] });
@@ -48,8 +48,7 @@ exports.find = async (req, res) => {
     return res.status(200).json({ list: listUser });
   } catch (error) {
     const { code } = error;
-    console.log(error);
-    if (code === "require email term")
+    if (code === "invalid-term")
       return res.status(403).json({ error: { code } });
 
     return res.status(500).json({ error: { code: "something went wrong!" } });
