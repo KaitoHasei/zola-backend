@@ -1,3 +1,5 @@
+const config = require("../config/environment");
+
 exports.me = async (req, res) => {
   const user = req.context.session;
   return res.status(200).json(user);
@@ -52,5 +54,38 @@ exports.find = async (req, res) => {
       return res.status(403).json({ error: { code } });
 
     return res.status(500).json({ error: { code: "something went wrong!" } });
+  }
+};
+
+exports.uploadPhoto = async (req, res) => {
+  const { session, prisma, s3 } = req.context;
+  const photo = req.file;
+
+  const params = {
+    Bucket: config.AWS_S3_BUCKET_NAME,
+    Key: `users/${session.id}/avatar-${Date.now()}`,
+    Body: photo.buffer,
+    ContentType: photo.mimetype,
+  };
+
+  try {
+    const avatarUploaded = await s3.upload(params).promise();
+
+    const avatarUser = await prisma.user.update({
+      data: {
+        photoUrl: avatarUploaded.Location,
+      },
+      where: {
+        id: session.id,
+      },
+      select: {
+        photoUrl: true,
+      },
+    });
+
+    return res.status(200).json({ photoUrl: avatarUser.photoUrl });
+  } catch (error) {
+    const { code } = error;
+    res.status(500).json({ error: { code: code } });
   }
 };

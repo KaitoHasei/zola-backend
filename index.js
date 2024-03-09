@@ -5,6 +5,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const { initializeApp } = require("firebase/app");
 const admin = require("firebase-admin");
+const S3 = require("aws-sdk/clients/s3");
 const { PrismaClient } = require("@prisma/client");
 
 const config = require("./config/environment");
@@ -31,6 +32,11 @@ initializeApp(firebaseConfig);
 const app = express();
 const httpServer = createServer(app);
 
+const s3 = new S3({
+  accessKeyId: config.AWS_S3_ACCESS_KEY,
+  secretAccessKey: config.AWS_S3_SECRET_KEY,
+});
+
 const io = socket(httpServer);
 
 io.use((socket, next) => {
@@ -56,12 +62,13 @@ app.use((req, res, next) => {
   req.context = {
     prisma,
     io,
+    s3,
   };
   next();
 });
 
 app.use("^/$", (req, res) => {
-  return res.status(200).end();
+  return res.status(404).end();
 });
 app.use("/api/v1", auth);
 app.use("/api/v1", user);

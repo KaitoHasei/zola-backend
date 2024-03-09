@@ -108,3 +108,9 @@ exports.get = async (req, res) => {
     return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
+
+// exports.sendImages = (req, res) => {
+//   const photos = req.files;
+//   console.log({ photos });
+//   return res.status(500).json({ error: { code: "something went wrong" } });
+// };
