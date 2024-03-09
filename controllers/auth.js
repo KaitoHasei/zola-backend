@@ -5,6 +5,7 @@ const {
   updateProfile,
   sendEmailVerification,
 } = require("firebase/auth");
+const { getAuth: getAuthAdmin } = require("firebase-admin/auth");
 
 exports.register = async (req, res) => {
   const { prisma } = req.context;
@@ -62,11 +63,13 @@ exports.login = async (req, res) => {
 
   try {
     const auth = getAuth();
+    const authAdmin = getAuthAdmin();
 
-    const credentials = await signInWithEmailAndPassword(auth, email, password);
+    const userByEmail = await authAdmin.getUserByEmail(email);
 
-    // if (!credentials.user.emailVerified)
-    //   throw { code: "auth/email-not-verify" };
+    if (!userByEmail.emailVerified) throw { code: "auth/email-not-verify" };
+
+    await signInWithEmailAndPassword(auth, email, password);
 
     const token = await auth.currentUser.getIdToken();
 

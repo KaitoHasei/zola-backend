@@ -9,8 +9,8 @@ const S3 = require("aws-sdk/clients/s3");
 const { PrismaClient } = require("@prisma/client");
 
 const config = require("./config/environment");
-const ServiceAccount = require("./service-account.json");
 const { firebaseConfig } = require("./config/firebase.config");
+const ServiceAccount = require("./service-account.json");
 
 const { socket, chatConnection, rootConnection } = require("./sockets");
 const {
@@ -22,20 +22,20 @@ const auth = require("./routes/auth");
 const user = require("./routes/user");
 const conversation = require("./routes/conversation");
 
-const prisma = new PrismaClient();
-
 admin.initializeApp({
   credential: admin.credential.cert(ServiceAccount),
 });
 initializeApp(firebaseConfig);
 
-const app = express();
-const httpServer = createServer(app);
-
 const s3 = new S3({
   accessKeyId: config.AWS_S3_ACCESS_KEY,
   secretAccessKey: config.AWS_S3_SECRET_KEY,
 });
+
+const prisma = new PrismaClient();
+
+const app = express();
+const httpServer = createServer(app);
 
 const io = socket(httpServer);
 
