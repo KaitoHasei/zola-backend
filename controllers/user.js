@@ -61,14 +61,16 @@ exports.uploadPhoto = async (req, res) => {
   const { session, prisma, s3 } = req.context;
   const photo = req.file;
 
-  const params = {
-    Bucket: config.AWS_S3_BUCKET_NAME,
-    Key: `users/${session.id}/avatar-${Date.now()}`,
-    Body: photo.buffer,
-    ContentType: photo.mimetype,
-  };
-
   try {
+    if (!photo?.buffer) throw { code: "empty-file" };
+
+    const params = {
+      Bucket: config.AWS_S3_BUCKET_NAME,
+      Key: `users/${session.id}/avatar-${Date.now()}`,
+      Body: photo.buffer,
+      ContentType: photo.mimetype,
+    };
+
     const avatarUploaded = await s3.upload(params).promise();
 
     const avatarUser = await prisma.user.update({
@@ -86,6 +88,7 @@ exports.uploadPhoto = async (req, res) => {
     return res.status(200).json({ photoUrl: avatarUser.photoUrl });
   } catch (error) {
     const { code } = error;
-    res.status(500).json({ error: { code: code } });
+    if (code === "empty-file") return res.status(403).json({ error: { code } });
+    return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };

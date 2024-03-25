@@ -1,4 +1,11 @@
+const { PrismaClient } = require("@prisma/client");
+const _ = require("lodash");
+
+const config = require("../config/environment");
+
 const { checkUserInConversation, convertRawData } = require("../utils");
+
+const prisma = new PrismaClient();
 
 exports.post = async (req, res) => {
   const { session, prisma, io } = req.context;
@@ -21,6 +28,7 @@ exports.post = async (req, res) => {
           push: {
             userId: session.id,
             content,
+            typeMessage: "TEXT",
           },
         },
         userSeen: [session.id],
@@ -109,8 +117,89 @@ exports.get = async (req, res) => {
   }
 };
 
-// exports.sendImages = (req, res) => {
-//   const photos = req.files;
-//   console.log({ photos });
-//   return res.status(500).json({ error: { code: "something went wrong" } });
-// };
+exports.sendImages = async (req, res) => {
+  const { session, s3, io } = req.context;
+  const { conversationId } = req.params;
+  const photos = req.files;
+
+  try {
+    if (_.isEmpty(photos)) throw { code: "empty-file" };
+
+    const isInConversation = await checkUserInConversation(
+      conversationId,
+      req.context
+    );
+
+    if (!isInConversation) throw { code: "conversation-not-exist" };
+
+    let contentUrl = "";
+
+    for (const [index, photo] of photos.entries()) {
+      const imageInfo = {
+        Bucket: config.AWS_S3_BUCKET_NAME,
+        Key: `conversations/${conversationId}/${
+          session.id
+        }-${Date.now()}${index}`,
+        Body: photo.buffer,
+        ContentType: photo.mimetype,
+      };
+
+      const imageUploaded = await s3.upload(imageInfo).promise();
+
+      if (index === 0) contentUrl = imageUploaded.Location;
+      else contentUrl = contentUrl.concat(",", imageUploaded.Location);
+    }
+
+    const conversation = await prisma.conversation.update({
+      data: {
+        message: {
+          push: {
+            userId: session.id,
+            content: contentUrl,
+            typeMessage: "IMAGE",
+          },
+        },
+        userSeen: [session.id],
+      },
+      where: {
+        id: conversationId,
+      },
+      include: {
+        participants: {
+          select: {
+            id: true,
+            displayName: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+
+    const newMessage = conversation?.message?.pop();
+
+    io.of("/chats").to(conversationId).emit("sent_message", {
+      id: conversation.id,
+      message: newMessage,
+    });
+
+    io.to(conversation.participantIds).emit("conversation_updated", {
+      id: conversation.id,
+      participants: conversation.participants,
+      userSeen: conversation.userSeen,
+      name: conversation.name,
+      image: conversation.image,
+      latestMessage: newMessage,
+      createdBy: conversation.createdBy,
+      updatedAt: conversation.updatedAt,
+    });
+
+    return res.status(200).end();
+  } catch (error) {
+    const { code } = error;
+
+    if (code === "empty-file") return res.status(403).json({ error: { code } });
+    else if (code === "conversation-not-exist")
+      return res.status(403).json({ error: { code } });
+    return res.status(500).json({ error: { code: "something went wrong" } });
+  }
+};

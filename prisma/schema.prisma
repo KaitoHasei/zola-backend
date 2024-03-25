@@ -38,5 +38,11 @@ model Conversation {
 type Message {
     userId String @db.ObjectId
     content String
+    typeMessage MessageType @default(TEXT)
     createdAt DateTime @default(now())
+}
+
+enum MessageType {
+    TEXT
+    IMAGE
 }

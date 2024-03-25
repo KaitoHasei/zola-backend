@@ -24,12 +24,12 @@ router
   .get(authenticationMiddleware, messageController.get)
   .post(authenticationMiddleware, messageController.post);
 
-// router
-//   .route("/conversations/:conversationId/images")
-//   .post(
-//     authenticationMiddleware,
-//     imageUploadMiddleware,
-//     messageController.sendImages
-//   );
+router
+  .route("/conversations/:conversationId/images")
+  .post(
+    authenticationMiddleware,
+    imageUploadMiddleware,
+    messageController.sendImages
+  );
 
 module.exports = router;
