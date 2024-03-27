@@ -1,6 +1,35 @@
 const { ObjectId } = require("mongodb");
 const _ = require("lodash");
 
+exports.checkUserById = async ( userId ) => {
+  const { prisma} = context;
+  try {
+    const user = prisma.user.findUnique({
+      where : {
+        id : userId
+      }
+    })
+    return !!user;
+  } catch(error) {
+    console.log("Error check user : ", error)
+    return false;
+  }
+}
+exports.updateUser = async (userId, dataUpdate) => {
+  const { prisma } = context;
+  try {
+    const user = await prisma.user.update({
+      where : {
+        id : userId
+      },
+      data : dataUpdate,
+    });
+    return !!user;
+  } catch(error) {
+    console.log("Error updating : ", error);
+    return false;
+  }
+}
 exports.checkUserInConversation = async (conversationId, context) => {
   const { session, prisma } = context;
 

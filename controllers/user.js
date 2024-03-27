@@ -1,4 +1,5 @@
 const config = require("../config/environment");
+const { checkUserById, updateUser } = require("../utils");
 
 exports.me = async (req, res) => {
   const user = req.context.session;
@@ -92,3 +93,24 @@ exports.uploadPhoto = async (req, res) => {
     return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
+
+exports.update = async (req, res) => {
+  const { userChange } = req.body;
+  console.log("req : ", req)
+  const { userId } = req.params;
+  try {
+    if(!userId ) throw { code: "Invalid-userId" };
+    console.log("userId : ", userId)
+    console.log("update user : ", userChange)
+    if(!userChange ) throw { code : "Invalid-Infomation-User"};
+    const checkingUser = await checkUserById(userId);
+    if(!checkingUser) throw {code : "User-is-not-exist"};
+    const updating = await updateUser(userId, userChange);
+    if(updating) {
+      res.status(201).json({ "update" : updating })
+    }
+  } catch(error) {
+    console.log("Error update user : ", error)
+    res.status(500).json({ error : {code : "something went wrong"}})
+  }
+}

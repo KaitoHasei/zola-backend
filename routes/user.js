@@ -18,5 +18,6 @@ router
     avatarUploadMiddleware,
     userController.uploadPhoto
   );
+router.route("/users/:userId").put(authenticationMiddleware, userController.update)
 
 module.exports = router;

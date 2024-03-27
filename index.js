@@ -17,6 +17,8 @@ const {
   socketAuthMiddleware,
 } = require("./middleware/authentication.middleware");
 
+require('aws-sdk/lib/maintenance_mode_message').suppress = true;
+
 //route
 const auth = require("./routes/auth");
 const user = require("./routes/user");
