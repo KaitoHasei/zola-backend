@@ -25,7 +25,8 @@ const authenticationMiddleware = async (req, res, next) => {
     });
 
     req.context = { ...req.context, session };
-    next();
+  
+   return next();
   } catch (error) {
     const { code } = error;
     if (

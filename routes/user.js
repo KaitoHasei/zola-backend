@@ -9,7 +9,7 @@ const {
 } = require("../middleware/fileUpload.middleware");
 const userController = require("../controllers/user");
 
-router.route("/users").get(authenticationMiddleware, userController.find);
+router.route("/users").get(authenticationMiddleware, userController.find).put(authenticationMiddleware, userController.updateUser);
 router.route("/users/me").get(authenticationMiddleware, userController.me);
 router
   .route("/users/avatar")
@@ -18,6 +18,5 @@ router
     avatarUploadMiddleware,
     userController.uploadPhoto
   );
-router.route("/users/:userId").put(authenticationMiddleware, userController.update)
 
 module.exports = router;

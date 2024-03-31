@@ -15,21 +15,7 @@ exports.checkUserById = async ( userId ) => {
     return false;
   }
 }
-exports.updateUser = async (userId, dataUpdate) => {
-  const { prisma } = context;
-  try {
-    const user = await prisma.user.update({
-      where : {
-        id : userId
-      },
-      data : dataUpdate,
-    });
-    return !!user;
-  } catch(error) {
-    console.log("Error updating : ", error);
-    return false;
-  }
-}
+
 exports.checkUserInConversation = async (conversationId, context) => {
   const { session, prisma } = context;
 
