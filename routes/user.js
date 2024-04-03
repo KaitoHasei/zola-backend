@@ -9,8 +9,11 @@ const {
 } = require("../middleware/fileUpload.middleware");
 const userController = require("../controllers/user");
 
-router.route("/users").get(authenticationMiddleware, userController.find).put(authenticationMiddleware, userController.updateUser);
-router.route("/users/me").get(authenticationMiddleware, userController.me);
+router.route("/users").get(authenticationMiddleware, userController.find);
+router
+  .route("/users/me")
+  .get(authenticationMiddleware, userController.me)
+  .put(authenticationMiddleware, userController.updateUser);
 router
   .route("/users/avatar")
   .post(

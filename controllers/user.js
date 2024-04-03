@@ -1,4 +1,3 @@
-const { request } = require("express");
 const config = require("../config/environment");
 
 exports.me = async (req, res) => {
@@ -95,27 +94,25 @@ exports.uploadPhoto = async (req, res) => {
 };
 
 exports.updateUser = async (req, res) => {
-  console.log('updsate ủe',  req.params);
- 
+  const { prisma, session } = req.context;
+  const { displayName = "" } = req.body;
+
   try {
-    const dataChange  = req.body;
-    const { userId } = req.params;
-    const { prisma } = req.context;
+    if (!displayName) throw { code: "Invalid-displayName" };
 
-    const params = {
-      where: {
-        id: userId,
+    const userUpdated = await prisma.user.update({
+      data: {
+        displayName,
+        emailVerified: false,
       },
-      data: dataChange
-    }
-    console.log("req : ", req)
-    if (!userId) throw { code: "Invalid-userId" };
-    if (!dataChange) throw { code: "Invalid-Infomation-User" };
-    const updating = await prisma.user.update(params);
-    return res.status(200).json({ user: updating })
+      where: {
+        id: session.id,
+      },
+    });
 
+    return res.status(200).json({ userUpdated });
   } catch (error) {
-    console.log("Error update user : ", error)
-    return res.status(500).json({ error: { code: "something went wrong" } })
+    console.log("Error update user : ", error);
+    return res.status(500).json({ error: { code: "something went wrong" } });
   }
-}
+};
