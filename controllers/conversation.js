@@ -83,8 +83,8 @@ exports.list = async (req, res) => {
           },
         },
         { $sort: { updatedAt: -1, "message.createdAt": 1 } },
-        { $skip: page * pageSize },
-        { $limit: pageSize },
+        // { $skip: page * pageSize },
+        // { $limit: pageSize },
         {
           $lookup: {
             from: "User",
