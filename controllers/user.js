@@ -95,7 +95,7 @@ exports.uploadPhoto = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   const { prisma, session } = req.context;
-  const { displayName = "" } = req.body;
+  const { displayName = "", avtUrl = "" } = req.body;
 
   try {
     if (!displayName) throw { code: "Invalid-displayName" };
@@ -103,6 +103,7 @@ exports.updateUser = async (req, res) => {
     const userUpdated = await prisma.user.update({
       data: {
         displayName,
+        avtUrl,
         emailVerified: false,
       },
       where: {
