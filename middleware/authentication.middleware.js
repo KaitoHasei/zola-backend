@@ -21,6 +21,8 @@ const authenticationMiddleware = async (req, res, next) => {
         email: true,
         photoUrl: true,
         createdAt: true,
+        bio : true,
+        dob : true
       },
     });
 
