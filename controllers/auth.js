@@ -95,3 +95,31 @@ exports.login = async (req, res) => {
     });
   }
 };
+
+/* exports.changePassword = async (req, res) => {
+  const { newPassword } = req.body;
+
+  try {
+    const auth = getAuth();
+    await updatePassword(auth.currentUser, newPassword);
+
+    res.status(200).json({ message: "Password updated successfully." });
+  } catch (err) {
+    const { code } = err;
+    if (code === "auth/requires-recent-login") {
+      res.status(401).json({
+        error: {
+          message: "To change password, re-authenticate the user.",
+          code: code.replace("auth/", ""),
+        },
+      });
+    } else {
+      res.status(500).json({
+        error: {
+          message: "An error occurred while updating the password.",
+          code: code ? code.replace("auth/", "") : "",
+        },
+      });
+    }
+  }
+}; */
