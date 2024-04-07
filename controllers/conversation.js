@@ -64,6 +64,77 @@ exports.post = async (req, res) => {
   }
 };
 
+exports.someController = async (req, res) => {
+  const { session, prisma } = req.context;
+  const { participantIds = [], groupName = "" } = req.body;
+
+  try {
+    if (!_.isArray(participantIds)) throw { code: "invalid-params" };
+
+    const indexOfCurrentUser = participantIds.indexOf(session.id);
+    console.log("indexOfCurrentUser: ", indexOfCurrentUser);
+    if (indexOfCurrentUser !== -1) participantIds.splice(indexOfCurrentUser, 1);
+
+    console.log("participantIds: ", participantIds);
+
+    if (_.isEmpty(participantIds)) throw { code: "invalid-params" };
+
+    let conversationId = "";
+
+    if (participantIds.length === 1) {
+      const _participantIds = [session.id, participantIds[0]];
+
+      const conversationExisted = await prisma.conversation.findFirst({
+        where: {
+          participantIds: {
+            hasEvery: _participantIds,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!conversationExisted) {
+        const conversation = await prisma.conversation.create({
+          data: {
+            participantIds: _participantIds,
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        conversationId = conversation.id;
+      } else {
+        conversationId = conversationExisted.id;
+      }
+    } else {
+      const _participantIds = [session.id, ...participantIds];
+
+      const conversation = await prisma.conversation.create({
+        data: {
+          participantIds: _participantIds,
+          isGroup: true,
+          groupName: groupName,
+          groupOwner: session.id,
+        },
+      });
+
+      conversationId = conversation.id;
+    }
+
+    return res.status(201).json({ id: conversationId });
+  } catch (error) {
+    const { code } = error;
+    console.log(error);
+
+    if (code === "invalid-params")
+      return res.status(400).json({ error: { code } });
+    return res.status(500).json({ error: { code: "something went wrong!" } });
+  }
+};
+
 exports.list = async (req, res) => {
   const { session, prisma } = req.context;
   const page = parseInt(req.query.page) || 0;
@@ -148,8 +219,10 @@ exports.get = async (req, res) => {
             photoUrl: true,
           },
         },
-        name: true,
-        image: true,
+        isGroup: true,
+        groupName: true,
+        groupImage: true,
+        groupOwner: true,
         userSeen: true,
         createdAt: true,
         updatedAt: true,
@@ -159,6 +232,7 @@ exports.get = async (req, res) => {
     return res.status(200).json(conversation);
   } catch (error) {
     const { code } = error;
+    console.log(error);
 
     if (code === "invalid-conversationId")
       return res.status(400).json({ error: { code } });

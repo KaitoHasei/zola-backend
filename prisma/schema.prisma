@@ -24,10 +24,11 @@ model Conversation {
     id String @id @default(auto()) @map("_id") @db.ObjectId
     participantIds String[] @db.ObjectId
     userSeen String[] @db.ObjectId
-    name String?
-    image String?
+    isGroup Boolean @default(false)
+    groupName String?
+    groupImage String?
+    groupOwner String? @db.ObjectId
     message Message[]
-    createdBy String @db.ObjectId
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
