@@ -35,7 +35,6 @@ exports.register = async (req, res) => {
         uid: user.uid,
         displayName: user.displayName,
         email: user.email,
-        emailVerified: user.emailVerified,
         createdAt: new Date(user.metadata.creationTime),
       },
     });
