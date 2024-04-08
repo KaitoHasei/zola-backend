@@ -21,10 +21,13 @@ const authenticationMiddleware = async (req, res, next) => {
         email: true,
         photoUrl: true,
         createdAt: true,
+        bio : true,
+        dob : true
       },
     });
 
     req.context = { ...req.context, session };
+
     next();
   } catch (error) {
     const { code } = error;

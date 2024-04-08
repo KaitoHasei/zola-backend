@@ -10,7 +10,13 @@ const {
 const userController = require("../controllers/user");
 
 router.route("/users").get(authenticationMiddleware, userController.find);
-router.route("/users/me").get(authenticationMiddleware, userController.me);
+router
+  .route("/users/me")
+  .get(authenticationMiddleware, userController.me)
+  .put(authenticationMiddleware, userController.updateUser);
+router
+  .route("/users/change-password")
+  .post(authenticationMiddleware, userController.changePassword)
 router
   .route("/users/avatar")
   .post(

@@ -1,6 +1,21 @@
 const { ObjectId } = require("mongodb");
 const _ = require("lodash");
 
+exports.checkUserById = async ( userId ) => {
+  const { prisma} = context;
+  try {
+    const user = prisma.user.findUnique({
+      where : {
+        id : userId
+      }
+    })
+    return !!user;
+  } catch(error) {
+    console.log("Error check user : ", error)
+    return false;
+  }
+}
+
 exports.checkUserInConversation = async (conversationId, context) => {
   const { session, prisma } = context;
 
