@@ -4,68 +4,6 @@ const { checkUserInConversation, convertRawData } = require("../utils");
 
 exports.post = async (req, res) => {
   const { session, prisma } = req.context;
-  const { participantId = "" } = req.body;
-
-  try {
-    if (
-      !participantId ||
-      (_.isArray(participantId) && _.isEmpty(participantId))
-    )
-      throw { code: "invalid-participant" };
-
-    let conversationId = "";
-
-    if (!_.isArray(participantId)) {
-      const existed = await prisma.conversation.findFirst({
-        where: {
-          participantIds: {
-            hasEvery: [participantId, session.id],
-          },
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      if (!existed) {
-        const conversation = await prisma.conversation.create({
-          data: {
-            participantIds: [participantId, session.id],
-            createdBy: session.id,
-          },
-          select: {
-            id: true,
-          },
-        });
-
-        conversationId = conversation.id;
-      } else {
-        conversationId = existed.id;
-      }
-    } else {
-      const conversation = await prisma.conversation.create({
-        data: {
-          participantIds: [...participantId, session.id],
-          createdBy: session.id,
-        },
-      });
-
-      conversationId = conversation.id;
-    }
-
-    return res.status(201).json({ id: conversationId });
-  } catch (error) {
-    const { code } = error;
-
-    if (code === "invalid-participant")
-      return res.status(400).json({ error: { code } });
-
-    return res.status(500).json({ error: { code: "something went wrong" } });
-  }
-};
-
-exports.someController = async (req, res) => {
-  const { session, prisma } = req.context;
   const { participantIds = [], groupName = "" } = req.body;
 
   try {
@@ -145,9 +83,7 @@ exports.list = async (req, res) => {
       pipeline: [
         {
           $match: {
-            message: {
-              $exists: true,
-            },
+            $or: [{ message: { $exists: true } }, { isGroup: true }],
             $expr: {
               $in: [{ $oid: session.id }, "$participantIds"],
             },

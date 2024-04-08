@@ -32,8 +32,4 @@ router
     messageController.sendImages
   );
 
-router
-  .route("/conversations/some-route")
-  .post(authenticationMiddleware, conversationController.someController);
-
 module.exports = router;
