@@ -4,22 +4,28 @@ const { checkUserInConversation, convertRawData } = require("../utils");
 
 exports.post = async (req, res) => {
   const { session, prisma } = req.context;
-  const { participantId = "" } = req.body;
+  const { participantIds = [], groupName = "" } = req.body;
 
   try {
-    if (
-      !participantId ||
-      (_.isArray(participantId) && _.isEmpty(participantId))
-    )
-      throw { code: "invalid-participant" };
+    if (!_.isArray(participantIds)) throw { code: "invalid-params" };
+
+    const indexOfCurrentUser = participantIds.indexOf(session.id);
+    console.log("indexOfCurrentUser: ", indexOfCurrentUser);
+    if (indexOfCurrentUser !== -1) participantIds.splice(indexOfCurrentUser, 1);
+
+    console.log("participantIds: ", participantIds);
+
+    if (_.isEmpty(participantIds)) throw { code: "invalid-params" };
 
     let conversationId = "";
 
-    if (!_.isArray(participantId)) {
-      const existed = await prisma.conversation.findFirst({
+    if (participantIds.length === 1) {
+      const _participantIds = [session.id, participantIds[0]];
+
+      const conversationExisted = await prisma.conversation.findFirst({
         where: {
           participantIds: {
-            hasEvery: [participantId, session.id],
+            hasEvery: _participantIds,
           },
         },
         select: {
@@ -27,11 +33,10 @@ exports.post = async (req, res) => {
         },
       });
 
-      if (!existed) {
+      if (!conversationExisted) {
         const conversation = await prisma.conversation.create({
           data: {
-            participantIds: [participantId, session.id],
-            createdBy: session.id,
+            participantIds: _participantIds,
           },
           select: {
             id: true,
@@ -40,13 +45,17 @@ exports.post = async (req, res) => {
 
         conversationId = conversation.id;
       } else {
-        conversationId = existed.id;
+        conversationId = conversationExisted.id;
       }
     } else {
+      const _participantIds = [session.id, ...participantIds];
+
       const conversation = await prisma.conversation.create({
         data: {
-          participantIds: [...participantId, session.id],
-          createdBy: session.id,
+          participantIds: _participantIds,
+          isGroup: true,
+          groupName: groupName,
+          groupOwner: session.id,
         },
       });
 
@@ -56,11 +65,11 @@ exports.post = async (req, res) => {
     return res.status(201).json({ id: conversationId });
   } catch (error) {
     const { code } = error;
+    console.log(error);
 
-    if (code === "invalid-participant")
+    if (code === "invalid-params")
       return res.status(400).json({ error: { code } });
-
-    return res.status(500).json({ error: { code: "something went wrong" } });
+    return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
 
@@ -74,9 +83,7 @@ exports.list = async (req, res) => {
       pipeline: [
         {
           $match: {
-            message: {
-              $exists: true,
-            },
+            $or: [{ message: { $exists: true } }, { isGroup: true }],
             $expr: {
               $in: [{ $oid: session.id }, "$participantIds"],
             },
@@ -148,8 +155,10 @@ exports.get = async (req, res) => {
             photoUrl: true,
           },
         },
-        name: true,
-        image: true,
+        isGroup: true,
+        groupName: true,
+        groupImage: true,
+        groupOwner: true,
         userSeen: true,
         createdAt: true,
         updatedAt: true,
@@ -159,6 +168,7 @@ exports.get = async (req, res) => {
     return res.status(200).json(conversation);
   } catch (error) {
     const { code } = error;
+    console.log(error);
 
     if (code === "invalid-conversationId")
       return res.status(400).json({ error: { code } });

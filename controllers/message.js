@@ -58,10 +58,11 @@ exports.post = async (req, res) => {
       id: conversation.id,
       participants: conversation.participants,
       userSeen: conversation.userSeen,
-      name: conversation.name,
-      image: conversation.image,
+      isGroup: conversation.isGroup,
+      groupName: conversation.groupName,
+      groupImage: conversation.image,
+      groupOwner: conversation.groupOwner,
       latestMessage: newMessage,
-      createdBy: conversation.createdBy,
       updatedAt: conversation.updatedAt,
     });
 
@@ -186,10 +187,11 @@ exports.sendImages = async (req, res) => {
       id: conversation.id,
       participants: conversation.participants,
       userSeen: conversation.userSeen,
-      name: conversation.name,
-      image: conversation.image,
+      isGroup: conversation.isGroup,
+      groupName: conversation.groupName,
+      groupImage: conversation.groupImage,
+      groupOwner: conversation.groupOwner,
       latestMessage: newMessage,
-      createdBy: conversation.createdBy,
       updatedAt: conversation.updatedAt,
     });
 
