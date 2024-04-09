@@ -8,40 +8,53 @@ generator client {
 }
 
 model User {
-    id String @id @default(auto()) @map("_id") @db.ObjectId
-    uid String @unique
-    conversationIds String[] @db.ObjectId
-    displayName String
-    email String @unique
-    photoUrl String?
-    emailVerified Boolean
-    bio String?
-    dob String?
-    createdAt DateTime
-    updatedAt DateTime @updatedAt
+  id                    String          @id @default(auto()) @map("_id") @db.ObjectId
+  uid                   String          @unique
+  conversationIds       String[]        @db.ObjectId
+  friendIds             String[]        @db.ObjectId
+  displayName           String
+  email                 String          @unique
+  photoUrl              String?
+  emailVerified         Boolean         @default(false)
+  bio                   String?
+  dob                   String?
+  createdAt             DateTime
+  updatedAt             DateTime        @updatedAt
+  allowFromStranger     Boolean?
 
-    conversations Conversation[] @relation(fields: [conversationIds], references: [id])
+  conversations         Conversation[]  @relation(fields: [conversationIds], references: [id])
+}
+
+model Friend {
+  id                    String          @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String          @db.ObjectId
+  friendId              String          @db.ObjectId
+  status                Int             @default(-1)  // 0: user yêu cầu kết bạn, 1: đã là bạn bè, 2: friend yêu cầu kết bạn, -1 không có quan hệ
+  updatedAt             DateTime        @default(now())
+
+  @@index([userId, friendId])
 }
 
 model Conversation {
-    id String @id @default(auto()) @map("_id") @db.ObjectId
-    participantIds String[] @db.ObjectId
-    userSeen String[] @db.ObjectId
-    name String?
-    image String?
-    message Message[]
-    createdBy String @db.ObjectId
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id                  String          @id @default(auto()) @map("_id") @db.ObjectId
+    participantIds      String[]        @db.ObjectId
+    userSeen            String[]        @db.ObjectId
+    isGroup             Boolean         @default(false)
+    groupName           String?
+    groupImage          String?
+    groupOwner          String?         @db.ObjectId
+    message             Message[]
+    createdAt           DateTime        @default(now())
+    updatedAt           DateTime        @updatedAt
 
-    participants User[] @relation(fields: [participantIds], references: [id])
+    participants        User[]          @relation(fields: [participantIds], references: [id])
 }
 
 type Message {
-    userId String @db.ObjectId
-    content String
-    typeMessage MessageType @default(TEXT)
-    createdAt DateTime @default(now())
+    userId              String          @db.ObjectId
+    content             String
+    typeMessage         MessageType     @default(TEXT)
+    createdAt           DateTime        @default(now())
 }
 
 enum MessageType {
