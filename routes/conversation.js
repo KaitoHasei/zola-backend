@@ -26,6 +26,7 @@ router
 
 router
   .route("/conversations/:conversationId/images")
+  .get(authenticationMiddleware, messageController.getImages)
   .post(
     authenticationMiddleware,
     imageUploadMiddleware,
