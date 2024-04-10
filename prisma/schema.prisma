@@ -39,6 +39,7 @@ model Conversation {
 }
 
 type Message {
+    cuid String @default(cuid())
     userId String @db.ObjectId
     content String
     typeMessage MessageType @default(TEXT)

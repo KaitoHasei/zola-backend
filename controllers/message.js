@@ -205,3 +205,52 @@ exports.sendImages = async (req, res) => {
     return res.status(500).json({ error: { code: "something went wrong" } });
   }
 };
+
+exports.getImages = async (req, res) => {
+  const { prisma } = req.context;
+  const { conversationId } = req.params;
+
+  try {
+    const isInConversation = await checkUserInConversation(
+      conversationId,
+      req.context
+    );
+
+    if (!isInConversation) throw { code: "conversation-not-exist" };
+
+    const imageMessagesRaw = await prisma.conversation.aggregateRaw({
+      pipeline: [
+        {
+          $match: {
+            _id: { $oid: conversationId },
+          },
+        },
+        { $unwind: "$message" },
+        { $sort: { "message.createdAt": -1 } },
+        { $match: { "message.typeMessage": "IMAGE" } },
+        // { $skip: page * pageSize },
+        // { $limit: pageSize },
+        { $group: { _id: "$_id", message: { $push: "$message" } } },
+        // { $project: { message: { $reverseArray: "$message" } } },
+      ],
+    });
+
+    const imageMessages = convertRawData(imageMessagesRaw)[0];
+    let listLinkImage = [];
+
+    imageMessages.message.forEach((content) => {
+      const linkSplited = content.content?.split(",");
+
+      listLinkImage = [...listLinkImage, ...linkSplited];
+    });
+
+    return res.status(200).json(listLinkImage);
+  } catch (error) {
+    const { code } = error;
+
+    if (code === "conversation-not-exist")
+      return res.status(403).json({ error: { code } });
+
+    return res.status(500).json({ error: { code: "something went wrong!" } });
+  }
+};
