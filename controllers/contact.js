@@ -237,6 +237,7 @@ exports.getAllFriendUser = async (req, res) => {
         friendId: friend.id, // ID của bạn bè
         status: 1, // Trạng thái là bạn bè
         friend: {
+          id: friend.id,
           displayName: friend.displayName,
           email: friend.email,
           photoUrl: friend.photoUrl,
@@ -252,7 +253,6 @@ exports.getAllFriendUser = async (req, res) => {
     res.status(500).json({ error: 'server internal error !' });
   }
 };
-
 
 exports.removeFriend = async (req, res) => {
   const { prisma } = req.context;
@@ -333,3 +333,59 @@ exports.getFriendRequested = async (req, res) => {
   }
 }
 
+exports.getListFriendUser = async (req, res) => {
+  const { prisma, session } = req.context;
+  try {
+    // Lấy danh sách tất cả các bạn bè của người dùng hiện tại có trạng thái là bạn bè (status: 1)
+    const friendsWithStatus = await prisma.relationship.findMany({
+      where: {
+        friends: { has: session.id }, // User hiện tại có trong danh sách bạn của mỗi mối quan hệ
+        status: 1 // Trạng thái là bạn bè
+      },
+      select: {
+        id: true, // ID của mỗi mối quan hệ
+        friends: true // Lấy danh sách bạn bè trong mỗi mối quan hệ
+      }
+    });
+
+    // Lấy danh sách id của các bạn bè
+    const friendIds = friendsWithStatus.flatMap(({ friends }) => {
+      // Tìm id của bạn bè (khác với id của user hiện tại)
+      return friends.filter(id => id !== session.id);
+    });
+
+    // Lấy thông tin của các bạn bè từ danh sách id vừa tạo
+    const friendsInfo = await prisma.user.findMany({
+      where: {
+        id: { in: friendIds }
+      },
+      select: {
+        id: true,
+        displayName: true,
+        email: true,
+        photoUrl: true,
+        bio: true,
+        dob: true
+      }
+    });
+
+    // Gắn thông tin về bạn bè và mối quan hệ vào kết quả trả về
+    const friendsWithUserInfo = friendsInfo.map(friend => {
+      // Tìm mối quan hệ tương ứng với id bạn bè
+
+      return {
+        id: friend.id,
+        displayName: friend.displayName,
+        email: friend.email,
+        photoUrl: friend.photoUrl,
+        bio: friend.bio,
+        dob: friend.dob
+      };
+    });
+
+    res.status(200).json(friendsWithUserInfo);
+  } catch (error) {
+    console.log("error: ", error);
+    res.status(500).json({ error: 'server internal error !' });
+  }
+}
