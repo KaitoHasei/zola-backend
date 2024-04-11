@@ -43,6 +43,7 @@ type Message {
     userId String @db.ObjectId
     content String
     typeMessage MessageType @default(TEXT)
+    isRevoke Boolean @default(false)
     createdAt DateTime @default(now())
 }
 
