@@ -79,6 +79,75 @@ exports.post = async (req, res) => {
   }
 };
 
+exports.delete = async (req, res) => {
+  const { session, io } = req.context;
+  const { conversationId, messageCuid } = req.params;
+
+  try {
+    const isInConversation = await checkUserInConversation(
+      conversationId,
+      req.context
+    );
+
+    if (!isInConversation) throw { code: "conversation-not-exist" };
+
+    const conversation = await prisma.conversation.update({
+      where: {
+        id: conversationId,
+      },
+      data: {
+        message: {
+          updateMany: {
+            where: {
+              AND: {
+                cuid: messageCuid,
+                userId: session.id,
+              },
+            },
+            data: {
+              isRevoke: true,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        message: {
+          select: {
+            cuid: true,
+            isRevoke: true,
+          },
+        },
+      },
+    });
+
+    const messageRevokeObj = conversation.message.reduce(
+      (obj, item) => ({
+        ...obj,
+        [item.cuid]: item,
+      }),
+      {}
+    );
+    const messageRevoked = messageRevokeObj[messageCuid];
+
+    if (!messageRevoked.isRevoke) throw { code: "can-not-revoke" };
+
+    io.of("/chats").to(conversationId).emit("revoke_message", {
+      id: conversation.id,
+      cuid: messageRevoked.cuid,
+    });
+
+    return res.status(200).end();
+  } catch (error) {
+    const { code } = error;
+
+    if (code === "conversation-not-exist" || code === "can-not-revoke")
+      return res.status(403).json({ error: { code } });
+
+    return res.status(500).json({ error: { code: "something went wrong!" } });
+  }
+};
+
 exports.get = async (req, res) => {
   const { prisma } = req.context;
   const { conversationId } = req.params;
@@ -97,6 +166,11 @@ exports.get = async (req, res) => {
       pipeline: [
         { $match: { _id: { $oid: conversationId } } },
         { $unwind: "$message" },
+        {
+          $match: {
+            "message.isRevoke": false,
+          },
+        },
         { $sort: { "message.createdAt": -1 } },
         // { $skip: page * pageSize },
         // { $limit: pageSize },
