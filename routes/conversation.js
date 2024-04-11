@@ -25,6 +25,10 @@ router
   .post(authenticationMiddleware, messageController.post);
 
 router
+  .route("/conversations/:conversationId/messages/:messageCuid")
+  .delete(authenticationMiddleware, messageController.delete);
+
+router
   .route("/conversations/:conversationId/images")
   .get(authenticationMiddleware, messageController.getImages)
   .post(
