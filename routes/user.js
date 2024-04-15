@@ -24,5 +24,5 @@ router
     avatarUploadMiddleware,
     userController.uploadPhoto
   );
-
+  
 module.exports = router;
