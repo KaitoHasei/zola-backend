@@ -27,9 +27,9 @@ model User {
 model Relationship {
     id        String   @id @default(auto()) @map("_id") @db.ObjectId
     friends   String[] @db.ObjectId
-    status    Int      @default(-1) // 0: user yêu cầu kết bạn, 1: đã là bạn bè, 2: friend yêu cầu kết bạn, -1 không có quan hệ
-    updatedAt DateTime @default(now())
+    status    Int      @default(0) // 0 : không có quan hệ, 1 là bạn bè, 2 đang yêu cầu 
     client    String   @db.ObjectId
+    updatedAt DateTime @default(now())
 
     @@index(friends)
 }
