@@ -1,6 +1,6 @@
 datasource db {
     provider = "mongodb"
-    url = env("DATABASE_URL")
+    url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -8,43 +8,42 @@ generator client {
 }
 
 model User {
-    id String @id @default(auto()) @map("_id") @db.ObjectId
-    uid String @unique
+    id              String   @id @default(auto()) @map("_id") @db.ObjectId
+    uid             String   @unique
     conversationIds String[] @db.ObjectId
-    displayName String
-    email String @unique
-    photoUrl String?
-    emailVerified Boolean
-    bio String?
-    dob String?
-    createdAt DateTime
-    updatedAt DateTime @updatedAt
+    displayName     String
+    email           String   @unique
+    photoUrl        String?
+    bio             String?
+    dob             String?
+    createdAt       DateTime
+    updatedAt       DateTime @updatedAt
 
     conversations Conversation[] @relation(fields: [conversationIds], references: [id])
 }
 
 model Conversation {
-    id String @id @default(auto()) @map("_id") @db.ObjectId
-    participantIds String[] @db.ObjectId
-    userSeen String[] @db.ObjectId
-    isGroup Boolean @default(false)
-    groupName String?
-    groupImage String?
-    groupOwner String? @db.ObjectId
-    message Message[]
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id             String    @id @default(auto()) @map("_id") @db.ObjectId
+    participantIds String[]  @db.ObjectId
+    userSeen       String[]  @db.ObjectId
+    isGroup        Boolean   @default(false)
+    groupName      String?
+    groupImage     String?
+    groupOwner     String?   @db.ObjectId
+    message        Message[]
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt
 
     participants User[] @relation(fields: [participantIds], references: [id])
 }
 
 type Message {
-    cuid String @default(cuid())
-    userId String @db.ObjectId
-    content String
+    cuid        String      @default(cuid())
+    userId      String      @db.ObjectId
+    content     String
     typeMessage MessageType @default(TEXT)
-    isRevoke Boolean @default(false)
-    createdAt DateTime @default(now())
+    isRevoke    Boolean     @default(false)
+    createdAt   DateTime    @default(now())
 }
 
 enum MessageType {
