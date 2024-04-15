@@ -20,4 +20,6 @@ router.route("/contacts/get-friends")
 router.route("/contacts/get-friends-request")
   .get(authenticationMiddleware, contactController.getFriendRequestUser);
 
+  router.route("/contacts/remove-friend")
+  .post(authenticationMiddleware, contactController.removeFriend);
   module.exports = router;
