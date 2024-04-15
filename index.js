@@ -23,6 +23,7 @@ require('aws-sdk/lib/maintenance_mode_message').suppress = true;
 const auth = require("./routes/auth");
 const user = require("./routes/user");
 const conversation = require("./routes/conversation");
+const contact = require("./routes/contact")
 
 admin.initializeApp({
   credential: admin.credential.cert(ServiceAccount),
@@ -75,6 +76,7 @@ app.use("^/$", (req, res) => {
 app.use("/api/v1", auth);
 app.use("/api/v1", user);
 app.use("/api/v1", conversation);
+app.use("/api/v1", contact)
 
 app.listen(config.PORT, () => {
   console.log(`Server is running on http://${config.HOST}:${config.PORT}`);

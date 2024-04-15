@@ -115,10 +115,10 @@ exports.updateUser = async (req, res) => {
 
     return res.status(200).json({ userUpdated });
   } catch (error) {
-    console.log("Error update user : ", error);
     return res.status(500).json({ error: { code: "something went wrong" } });
   }
 };
+
 exports.changePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const { session } = req.context;
@@ -139,7 +139,6 @@ exports.changePassword = async (req, res) => {
       return res.status(200).json({ message: "Password updated successfully." });
     }
   } catch (err) {
-    console.log("Eror : ", err)
     const { code } = err;
     if (code === "auth/wrong-password") {
       return res.status(401).json({ error: { code, message: "Incorrect old password." } });
