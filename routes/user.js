@@ -10,13 +10,13 @@ const {
 const userController = require("../controllers/user");
 
 router.route("/users").get(authenticationMiddleware, userController.find);
-router.route("/users/me").get(authenticationMiddleware, userController.me);
 router
-  .route("/users/avatar")
-  .post(
+  .route("/users/me")
+  .get(authenticationMiddleware, userController.me)
+  .patch(
     authenticationMiddleware,
     avatarUploadMiddleware,
-    userController.uploadPhoto
+    userController.patch
   );
 
 module.exports = router;

@@ -1,6 +1,6 @@
 datasource db {
     provider = "mongodb"
-    url = env("DATABASE_URL")
+    url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -8,38 +8,57 @@ generator client {
 }
 
 model User {
-    id String @id @default(auto()) @map("_id") @db.ObjectId
-    uid String @unique
-    conversationIds String[] @db.ObjectId
-    displayName String
-    email String @unique
-    photoUrl String?
-    emailVerified Boolean
-    createdAt DateTime
-    updatedAt DateTime @updatedAt
+    id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+    uid                   String   @unique
+    contactListIds        String[] @db.ObjectId
+    contactRequestIds     String[] @db.ObjectId
+    contactSentRequestIds String[] @db.ObjectId
+    conversationIds       String[] @db.ObjectId
+    displayName           String
+    email                 String   @unique
+    photoUrl              String?
+    createdAt             DateTime
+    updatedAt             DateTime @updatedAt
 
-    conversations Conversation[] @relation(fields: [conversationIds], references: [id])
+    contact            Contact?       @relation(name: "Contact")
+    contactList        Contact[]      @relation(name: "ContactList", fields: [contactListIds], references: [id])
+    contactRequest     Contact[]      @relation(name: "ContactRequest", fields: [contactRequestIds], references: [id])
+    contactSentRequest Contact[]      @relation(name: "ContactSentRequest", fields: [contactSentRequestIds], references: [id])
+    conversations      Conversation[] @relation(fields: [conversationIds], references: [id])
+}
+
+model Contact {
+    id                     String   @id @default(auto()) @map("_id") @db.ObjectId
+    userId                 String   @unique @db.ObjectId
+    friendListIds          String[] @db.ObjectId
+    requestFriendByIds     String[] @db.ObjectId
+    sentRequestFriendToIds String[] @db.ObjectId
+
+    user                User   @relation(name: "Contact", fields: [userId], references: [id])
+    friendList          User[] @relation(name: "ContactList", fields: [friendListIds], references: [id])
+    requestFriendBy     User[] @relation(name: "ContactRequest", fields: [requestFriendByIds], references: [id])
+    sentRequestFriendTo User[] @relation(name: "ContactSentRequest", fields: [sentRequestFriendToIds], references: [id])
 }
 
 model Conversation {
-    id String @id @default(auto()) @map("_id") @db.ObjectId
-    participantIds String[] @db.ObjectId
-    userSeen String[] @db.ObjectId
-    name String?
-    image String?
-    message Message[]
-    createdBy String @db.ObjectId
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id             String    @id @default(auto()) @map("_id") @db.ObjectId
+    participantIds String[]  @db.ObjectId
+    userSeen       String[]  @db.ObjectId
+    name           String?
+    image          String?
+    message        Message[]
+    createdBy      String    @db.ObjectId
+    createdAt      DateTime  @default(now())
+    updatedAt      DateTime  @updatedAt
 
     participants User[] @relation(fields: [participantIds], references: [id])
 }
 
 type Message {
-    userId String @db.ObjectId
-    content String
+    userId      String      @db.ObjectId
+    content     String
     typeMessage MessageType @default(TEXT)
-    createdAt DateTime @default(now())
+    createdAt   DateTime    @default(now())
 }
 
 enum MessageType {

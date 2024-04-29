@@ -22,7 +22,7 @@ exports.register = async (req, res) => {
     );
 
     if (credentials && auth.currentUser) {
-      await sendEmailVerification(auth.currentUser);
+      // await sendEmailVerification(auth.currentUser);
       await updateProfile(auth.currentUser, {
         displayName: username,
       });
@@ -35,7 +35,6 @@ exports.register = async (req, res) => {
         uid: user.uid,
         displayName: user.displayName,
         email: user.email,
-        emailVerified: user.emailVerified,
         createdAt: new Date(user.metadata.creationTime),
       },
     });
@@ -67,7 +66,7 @@ exports.login = async (req, res) => {
 
     const userByEmail = await authAdmin.getUserByEmail(email);
 
-    if (!userByEmail.emailVerified) throw { code: "auth/email-not-verify" };
+    // if (!userByEmail.emailVerified) throw { code: "auth/email-not-verify" };
 
     await signInWithEmailAndPassword(auth, email, password);
 
@@ -76,6 +75,7 @@ exports.login = async (req, res) => {
     res.status(200).json({ access_token: token });
   } catch (err) {
     const { code } = err;
+    console.log(err);
     if (
       code === "auth/wrong-password" ||
       code === "auth/invalid-credential" ||

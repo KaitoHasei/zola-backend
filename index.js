@@ -21,6 +21,7 @@ const {
 const auth = require("./routes/auth");
 const user = require("./routes/user");
 const conversation = require("./routes/conversation");
+const friend = require("./routes/friend");
 
 admin.initializeApp({
   credential: admin.credential.cert(ServiceAccount),
@@ -73,6 +74,7 @@ app.use("^/$", (req, res) => {
 app.use("/api/v1", auth);
 app.use("/api/v1", user);
 app.use("/api/v1", conversation);
+app.use("/api/v1", friend);
 
 app.listen(config.PORT, () => {
   console.log(`Server is running on http://${config.HOST}:${config.PORT}`);
