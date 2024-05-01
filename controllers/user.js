@@ -61,7 +61,6 @@ exports.find = async (req, res) => {
 exports.uploadPhoto = async (req, res) => {
   const { session, prisma, s3 } = req.context;
   const photo = req.file;
-
   try {
     if (!photo?.buffer) throw { code: "empty-file" };
 
@@ -96,7 +95,7 @@ exports.uploadPhoto = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   const { prisma, session } = req.context;
-  const { displayName = "", photoUrl = "", dob = "", bio = "" } = req.body;
+  const { displayName = "", dob = "", bio = "" } = req.body;
 
   try {
     if (!req.body) throw { code: "Invalid-data" };
@@ -104,7 +103,6 @@ exports.updateUser = async (req, res) => {
     const userUpdated = await prisma.user.update({
       data: {
         displayName,
-        photoUrl,
         dob,
         bio
       },
@@ -122,7 +120,6 @@ exports.updateUser = async (req, res) => {
 exports.changePassword = async (req, res) => {
   const { oldPassword, newPassword } = req.body;
   const { session } = req.context;
-
   try {
     const auth = getAuth();
 
