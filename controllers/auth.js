@@ -4,6 +4,7 @@ const {
   signInWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
+  sendPasswordResetEmail 
 } = require("firebase/auth");
 const { getAuth: getAuthAdmin } = require("firebase-admin/auth");
 
@@ -67,7 +68,7 @@ exports.login = async (req, res) => {
     const userByEmail = await authAdmin.getUserByEmail(email);
 
     if (!userByEmail.emailVerified) throw { code: "auth/email-not-verify" };
-    
+
     await signInWithEmailAndPassword(auth, email, password);
 
     const token = await auth.currentUser.getIdToken();
@@ -93,30 +94,25 @@ exports.login = async (req, res) => {
   }
 };
 
-/* exports.changePassword = async (req, res) => {
-  const { newPassword } = req.body;
+exports.forgotPassword = async (req, res) => {
+  const { email } = req.body;
 
   try {
     const auth = getAuth();
-    await updatePassword(auth.currentUser, newPassword);
+    const actionCodeSettings = {
+      url: 'http://localhost:3000/login', 
+      handleCodeInApp: true,
+    };
+    await sendPasswordResetEmail(auth, email, actionCodeSettings);
 
-    res.status(200).json({ message: "Password updated successfully." });
-  } catch (err) {
-    const { code } = err;
-    if (code === "auth/requires-recent-login") {
-      res.status(401).json({
-        error: {
-          message: "To change password, re-authenticate the user.",
-          code: code.replace("auth/", ""),
-        },
-      });
+    res.status(200).json({ message: "Password reset email sent successfully" });
+  } catch (error) {
+    console.log("error : ", error)
+    const { code } = error;
+    if (code === "auth/user-not-found") {
+      res.status(404).json({ error: "User not found" });
     } else {
-      res.status(500).json({
-        error: {
-          message: "An error occurred while updating the password.",
-          code: code ? code.replace("auth/", "") : "",
-        },
-      });
+      res.status(500).json({ error: "Internal server error" });
     }
   }
-}; */
+};
