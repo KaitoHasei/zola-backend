@@ -4,7 +4,8 @@ const {
   signInWithEmailAndPassword,
   updateProfile,
   sendEmailVerification,
-  sendPasswordResetEmail 
+  sendPasswordResetEmail,
+  signOut
 } = require("firebase/auth");
 const { getAuth: getAuthAdmin } = require("firebase-admin/auth");
 
@@ -114,5 +115,18 @@ exports.forgotPassword = async (req, res) => {
     } else {
       res.status(500).json({ error: "Internal server error" });
     }
+  }
+};
+
+exports.logout = async (req, res) => {
+  try {
+    const auth = getAuth();
+    
+    await signOut(auth); 
+
+    res.status(200).json({ success: true, message: "User logged out successfully" });
+  } catch (error) {
+    console.error("Logout error:", error);
+    res.status(500).json({ success: false, error: "An error occurred while logging out" });
   }
 };
