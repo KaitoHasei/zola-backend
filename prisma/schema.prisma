@@ -21,7 +21,16 @@ model User {
     updatedAt         DateTime @updatedAt
     allowFromStranger Boolean?
 
-    conversations Conversation[] @relation(fields: [conversationIds], references: [id])
+  conversations         Conversation[]  @relation(fields: [conversationIds], references: [id])
+}
+
+model Relationship {
+  id                    String          @id @default(auto()) @map("_id") @db.ObjectId
+  friends               String[]        @db.ObjectId
+  status                Int             @default(0)  // 0 : không có quan hệ, 1 là bạn bè, 2 đang yêu cầu 
+  client                String          @db.ObjectId
+  updatedAt             DateTime        @default(now())
+  @@index(friends)
 }
 
 model Relationship {
@@ -46,7 +55,7 @@ model Conversation {
     createdAt      DateTime  @default(now())
     updatedAt      DateTime  @updatedAt
 
-    participants User[] @relation(fields: [participantIds], references: [id])
+    participants        User[]          @relation(fields: [participantIds], references: [id])
 }
 
 type Message {

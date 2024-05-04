@@ -4,6 +4,11 @@ exports.getAllContact = async (req, res) => {
   try {
     // Lấy danh sách tất cả người dùng
     const users = await prisma.user.findMany({
+      where: {
+        NOT: {
+          id: session.id
+        }
+      },
       select: {
         id: true,
         displayName: true,

@@ -20,8 +20,8 @@ router
 router
   .route("/users/avatar")
   .post(
-    authenticationMiddleware,
     avatarUploadMiddleware,
+    authenticationMiddleware,
     userController.uploadPhoto
   );
   
