@@ -33,16 +33,6 @@ model Relationship {
   @@index(friends)
 }
 
-model Relationship {
-    id        String   @id @default(auto()) @map("_id") @db.ObjectId
-    friends   String[] @db.ObjectId
-    status    Int      @default(0) // 0 : không có quan hệ, 1 là bạn bè, 2 đang yêu cầu 
-    client    String   @db.ObjectId
-    updatedAt DateTime @default(now())
-
-    @@index(friends)
-}
-
 model Conversation {
     id             String    @id @default(auto()) @map("_id") @db.ObjectId
     participantIds String[]  @db.ObjectId
