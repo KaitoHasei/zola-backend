@@ -67,7 +67,7 @@ exports.login = async (req, res) => {
     const userByEmail = await authAdmin.getUserByEmail(email);
 
     if (!userByEmail.emailVerified) throw { code: "auth/email-not-verify" };
-    
+
     await signInWithEmailAndPassword(auth, email, password);
 
     const token = await auth.currentUser.getIdToken();
