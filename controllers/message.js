@@ -328,3 +328,72 @@ exports.getImages = async (req, res) => {
     return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
+
+exports.startCallVideo = async (req, res) => {
+  const { session, io } = req.context;
+  const { conversationId } = req.params;
+  
+  try {
+    const isInConversation = await checkUserInConversation(
+      conversationId,
+      req.context
+    );
+    /*Check user in conversations  */
+    if (!isInConversation) throw { code: "conversation-not-exist" };
+
+    let content = `${session.displayName} has started a call`;
+
+     /* Save info the video call */
+    const conversation = await prisma.conversation.update({
+      data: {
+        message: {
+          push: {
+            userId: session.id,
+            content: content,
+            typeMessage: "CALL",
+          },
+        },
+        userSeen: [session.id],
+      },
+      where: {
+        id: conversationId,
+      },
+      include: {
+        participants: {
+          select: {
+            id: true,
+            displayName: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+
+    const newMessage = conversation?.message?.pop();
+
+    io.of("/chats").to(conversationId).emit("sent_message", {
+      id: conversation.id,
+      message: newMessage,
+    });
+
+    io.to(conversation.participantIds).emit("conversation_updated", {
+      id: conversation.id,
+      participants: conversation.participants,
+      userSeen: conversation.userSeen,
+      isGroup: conversation.isGroup,
+      groupName: conversation.groupName,
+      groupImage: conversation.groupImage,
+      groupOwner: conversation.groupOwner,
+      latestMessage: newMessage,
+      updatedAt: conversation.updatedAt,
+    });
+
+    return res.status(200).end();
+  } catch (error) {
+    const { code } = error;
+
+    if (code === "conversation-not-exist")
+      return res.status(403).json({ error: { code } });
+    return res.status(500).json({ error: { code: "something went wrong" } });
+  }
+};

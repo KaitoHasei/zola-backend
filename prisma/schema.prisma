@@ -60,4 +60,6 @@ type Message {
 enum MessageType {
     TEXT
     IMAGE
+    CALL
+    FILE
 }

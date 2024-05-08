@@ -43,7 +43,6 @@ const chatConnection = (socket) => {
 
   socket.on("disconnect", () => console.log("client chat disconnected"));
 };
-
 module.exports = {
   socket,
   rootConnection,

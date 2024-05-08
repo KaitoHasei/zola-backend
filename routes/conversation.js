@@ -37,4 +37,12 @@ router
     messageController.sendImages
   );
 
+  router
+  .route("/conversations/:conversationId/startVideoCall")
+  .post(
+    authenticationMiddleware,
+    imageUploadMiddleware,
+    messageController.startCallVideo
+  );
+
 module.exports = router;
