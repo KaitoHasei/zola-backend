@@ -52,4 +52,11 @@ router
     messageController.sendImages
   );
 
+  router
+  .route("/conversations/:conversationId/startVideoCall")
+  .post(
+    authenticationMiddleware,
+    messageController.startCallVideo
+  );
+
 module.exports = router;

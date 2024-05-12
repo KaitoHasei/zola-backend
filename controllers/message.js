@@ -328,3 +328,75 @@ exports.getImages = async (req, res) => {
     return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
+
+exports.startCallVideo = async (req, res) => {
+  const { session, prisma, io } = req.context;
+  const { conversationId } = req.params;
+  const { content } = req.body;
+
+  try {
+    if (!content) throw { code: "invalid-message" };
+
+    const isInConversation = await checkUserInConversation(
+      conversationId,
+      req.context
+    );
+
+    if (!isInConversation) throw { code: "conversation-not-exist" };
+
+    const conversation = await prisma.conversation.update({
+      data: {
+        message: {
+          push: {
+            userId: session.id,
+            content,
+            typeMessage: "CALL",
+          },
+        },
+        userSeen: [session.id],
+      },
+      where: {
+        id: conversationId,
+      },
+      include: {
+        participants: {
+          select: {
+            id: true,
+            displayName: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+
+    const newMessage = conversation?.message?.pop();
+
+    io.of("/chats").to(conversationId).emit("sent_message", {
+      id: conversation.id,
+      message: newMessage,
+    });
+
+    io.to(conversation.participantIds).emit("conversation_updated", {
+      id: conversation.id,
+      participants: conversation.participants,
+      userSeen: conversation.userSeen,
+      isGroup: conversation.isGroup,
+      groupName: conversation.groupName,
+      groupImage: conversation.image,
+      groupOwner: conversation.groupOwner,
+      latestMessage: newMessage,
+      updatedAt: conversation.updatedAt,
+    });
+
+    return res.status(200).end();
+  } catch (error) {
+    const { code } = error;
+
+    if (code === "invalid-message")
+      return res.status(400).json({ error: { code } });
+    else if (code === "conversation-not-exist")
+      return res.status(403).json({ error: { code } });
+
+    return res.status(500).json({ error: { code: "something went wrong!" } });
+  }
+};

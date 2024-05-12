@@ -308,6 +308,7 @@ exports.getFriendRequested = async (req, res) => {
         },
         status: 2, // Trạng thái là yêu cầu kết bạn
         client: session.id, // Người gửi yêu cầu là người dùng hiện tại
+        /* id: { not : session} */
       },
       select: {
         id: true,
@@ -317,13 +318,11 @@ exports.getFriendRequested = async (req, res) => {
         updatedAt: true,
       },
     });
-
     // Lấy danh sách id của người nhận lời mời kết bạn
     const requestUserIds = friendRequests.map((request) => {
       const friendId = request.friends.find((id) => id !== session.id); // Tìm id của người nhận yêu cầu
       return friendId;
     });
-
     // Truy vấn trong bảng User để lấy thông tin của người nhận yêu cầu kết bạn
     const requestUsers = await prisma.user.findMany({
       where: {
