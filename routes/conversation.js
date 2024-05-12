@@ -6,6 +6,7 @@ const {
 } = require("../middleware/authentication.middleware");
 const {
   imageUploadMiddleware,
+  avatarUploadMiddleware,
 } = require("../middleware/fileUpload.middleware");
 const conversationController = require("../controllers/conversation");
 const messageController = require("../controllers/message");
@@ -17,7 +18,21 @@ router
 
 router
   .route("/conversations/:conversationId")
-  .get(authenticationMiddleware, conversationController.get);
+  .get(authenticationMiddleware, conversationController.get)
+  .patch(
+    authenticationMiddleware,
+    avatarUploadMiddleware,
+    conversationController.updateGroupImage
+  )
+  .put(authenticationMiddleware, conversationController.updateGroup);
+
+router
+  .route("/conversations/:conversationId/group-member")
+  .post(authenticationMiddleware, conversationController.addGroupMembers);
+
+router
+  .route("/conversations/:conversationId/group-member/:userId")
+  .delete(authenticationMiddleware, conversationController.removeGroupMember);
 
 router
   .route("/conversations/:conversationId/messages")
@@ -41,7 +56,6 @@ router
   .route("/conversations/:conversationId/startVideoCall")
   .post(
     authenticationMiddleware,
-    imageUploadMiddleware,
     messageController.startCallVideo
   );
 

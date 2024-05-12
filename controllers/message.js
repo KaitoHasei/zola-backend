@@ -330,26 +330,26 @@ exports.getImages = async (req, res) => {
 };
 
 exports.startCallVideo = async (req, res) => {
-  const { session, io } = req.context;
+  const { session, prisma, io } = req.context;
   const { conversationId } = req.params;
-  
+  const { content } = req.body;
+
   try {
+    if (!content) throw { code: "invalid-message" };
+
     const isInConversation = await checkUserInConversation(
       conversationId,
       req.context
     );
-    /*Check user in conversations  */
+
     if (!isInConversation) throw { code: "conversation-not-exist" };
 
-    let content = `${session.displayName} has started a call`;
-
-     /* Save info the video call */
     const conversation = await prisma.conversation.update({
       data: {
         message: {
           push: {
             userId: session.id,
-            content: content,
+            content,
             typeMessage: "CALL",
           },
         },
@@ -382,7 +382,7 @@ exports.startCallVideo = async (req, res) => {
       userSeen: conversation.userSeen,
       isGroup: conversation.isGroup,
       groupName: conversation.groupName,
-      groupImage: conversation.groupImage,
+      groupImage: conversation.image,
       groupOwner: conversation.groupOwner,
       latestMessage: newMessage,
       updatedAt: conversation.updatedAt,
@@ -392,8 +392,11 @@ exports.startCallVideo = async (req, res) => {
   } catch (error) {
     const { code } = error;
 
-    if (code === "conversation-not-exist")
+    if (code === "invalid-message")
+      return res.status(400).json({ error: { code } });
+    else if (code === "conversation-not-exist")
       return res.status(403).json({ error: { code } });
-    return res.status(500).json({ error: { code: "something went wrong" } });
+
+    return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
