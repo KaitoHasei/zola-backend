@@ -17,8 +17,6 @@ const socket = (server) => {
     },
   });
 
-  server.listen(8081);
-
   return io;
 };
 
