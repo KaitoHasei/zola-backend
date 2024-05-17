@@ -6,8 +6,8 @@ exports.getAllContact = async (req, res) => {
     const users = await prisma.user.findMany({
       where: {
         NOT: {
-          id: session.id
-        }
+          id: session.id,
+        },
       },
       select: {
         id: true,
@@ -86,12 +86,10 @@ exports.sendFriendRequest = async (req, res) => {
 
     if (existingRelationship) {
       // Nếu tồn tại, trả về bản ghi Relationship đã tồn tại
-      return res
-        .status(200)
-        .json({
-          message: "Friend request already exists",
-          data: existingRelationship,
-        });
+      return res.status(200).json({
+        message: "Friend request already exists",
+        data: existingRelationship,
+      });
     }
 
     // Nếu không có bản ghi Relationship nào tồn tại, tạo mới một yêu cầu kết bạn
@@ -104,12 +102,10 @@ exports.sendFriendRequest = async (req, res) => {
         updatedAt: currentTime, // Cập nhật thời gian
       },
     });
-    res
-      .status(201)
-      .json({
-        message: "Friend request sent successfully",
-        data: newFriendRequest,
-      });
+    res.status(201).json({
+      message: "Friend request sent successfully",
+      data: newFriendRequest,
+    });
     /* create notification */
   } catch (error) {
     console.error("Error sending friend request: ", error);
@@ -134,12 +130,10 @@ exports.aceptFriendRequest = async (req, res) => {
       },
     });
 
-    res
-      .status(200)
-      .json({
-        message: "Accepted successfully",
-        data: updateAcceptFriendRequest,
-      });
+    res.status(200).json({
+      message: "Accepted successfully",
+      data: updateAcceptFriendRequest,
+    });
   } catch (error) {
     res.status(500).json({ error: "Internal server error!" });
   }
@@ -285,12 +279,10 @@ exports.removeFriend = async (req, res) => {
       data: { status: 0 },
     });
 
-    res
-      .status(200)
-      .json({
-        message: "Friend removed successfully",
-        data: updatedRelationshipRecord,
-      });
+    res.status(200).json({
+      message: "Friend removed successfully",
+      data: updatedRelationshipRecord,
+    });
   } catch (error) {
     // Xử lý lỗi
     res.status(500).json({ error: "Internal server error" });

@@ -7,6 +7,7 @@ const {
 const {
   imageUploadMiddleware,
   avatarUploadMiddleware,
+  anyFileUploadMiddleware,
 } = require("../middleware/fileUpload.middleware");
 const conversationController = require("../controllers/conversation");
 const messageController = require("../controllers/message");
@@ -51,12 +52,16 @@ router
     imageUploadMiddleware,
     messageController.sendImages
   );
-
-  router
-  .route("/conversations/:conversationId/startVideoCall")
+router
+  .route("/conversations/:conversationId/file")
+  .get(authenticationMiddleware, messageController.getFile)
   .post(
     authenticationMiddleware,
-    messageController.startCallVideo
+    anyFileUploadMiddleware,
+    messageController.sendFile
   );
+router
+  .route("/conversations/:conversationId/startVideoCall")
+  .post(authenticationMiddleware, messageController.startCallVideo);
 
 module.exports = router;
