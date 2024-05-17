@@ -402,7 +402,7 @@ exports.removeGroupMember = async (req, res) => {
     if (!conversation.isGroup || conversation?.groupOwner !== session.id)
       throw { code: "user-has-not-permission" };
 
-    if (conversation.participantIds.length === 3)
+    if (conversation.participantIds.length === 2)
       throw { code: "must-least-3-members" };
 
     const conversationParticipantIds = [...conversation.participantIds];

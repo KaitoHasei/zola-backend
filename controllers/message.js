@@ -400,3 +400,97 @@ exports.startCallVideo = async (req, res) => {
     return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
+
+exports.getFile = async (req, res) => {};
+
+exports.sendFile = async (req, res) => {
+  const { session, s3, io } = req.context;
+  const { conversationId } = req.params;
+  const file = req.file;
+
+  try {
+    if (_.isEmpty(file)) throw { code: "empty-file" };
+
+    const isInConversation = await checkUserInConversation(
+      conversationId,
+      req.context
+    );
+    if (!isInConversation) throw { code: "conversation-not-exist" };
+
+    const fileExtension = file.originalname.split(".").pop();
+    const fileName = file.originalname;
+    const fileType = file.mimetype;
+
+    const fileInfo = {
+      Bucket: config.AWS_S3_BUCKET_NAME,
+      Key: `${Date.now()}-${fileName}`,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    };
+
+    const fileloaded = await s3.upload(fileInfo).promise();
+    const contentUrl = fileloaded.Location;
+
+    // Xác định loại tin nhắn dựa trên MIME type
+    let typeMessage;
+    if (fileType.startsWith("video/")) {
+      typeMessage = "VIDEO";
+    } else {
+      typeMessage = "FILE";
+    }
+
+    const conversation = await prisma.conversation.update({
+      data: {
+        message: {
+          push: {
+            userId: session.id,
+            content: contentUrl,
+            typeMessage: typeMessage,
+          },
+        },
+        userSeen: [session.id],
+      },
+      where: {
+        id: conversationId,
+      },
+      include: {
+        participants: {
+          select: {
+            id: true,
+            displayName: true,
+            photoUrl: true,
+          },
+        },
+      },
+    });
+
+    const newMessage = conversation?.message?.pop();
+
+    io.of("/chats").to(conversationId).emit("sent_message", {
+      id: conversation.id,
+      message: newMessage,
+    });
+
+    io.to(conversation.participantIds).emit("conversation_updated", {
+      id: conversation.id,
+      participants: conversation.participants,
+      userSeen: conversation.userSeen,
+      isGroup: conversation.isGroup,
+      groupName: conversation.groupName,
+      groupImage: conversation.groupImage,
+      groupOwner: conversation.groupOwner,
+      latestMessage: newMessage,
+      updatedAt: conversation.updatedAt,
+    });
+
+    return res.status(200).end();
+  } catch (error) {
+    console.log(error);
+    const { code } = error;
+
+    if (code === "empty-file") return res.status(403).json({ error: { code } });
+    else if (code === "conversation-not-exist")
+      return res.status(403).json({ error: { code } });
+    return res.status(500).json({ error: { code: "something went wrong" } });
+  }
+};
