@@ -38,6 +38,23 @@ const s3 = new S3({
 const prisma = new PrismaClient();
 
 const app = express();
+// const httpServer = createServer(app);
+const httpServer = app.listen(config.PORT);
+
+const io = socket(httpServer);
+
+io.use((socket, next) => {
+  socket.request.context = {
+    prisma,
+  };
+
+  next();
+});
+
+io.use(socketAuthMiddleware);
+
+io.on("connection", rootConnection);
+io.of("/chats").on("connection", chatConnection);
 
 app.use(morgan("combined"));
 app.use(cors());
@@ -61,22 +78,3 @@ app.use("/api/v1", auth);
 app.use("/api/v1", user);
 app.use("/api/v1", conversation);
 app.use("/api/v1", contact);
-
-const httpServer = app.listen(config.PORT, () => {
-  console.log(`Server is running on http://${config.HOST}:${config.PORT}`);
-});
-
-const io = socket(httpServer);
-
-io.use((socket, next) => {
-  socket.request.context = {
-    prisma,
-  };
-
-  next();
-});
-
-io.use(socketAuthMiddleware);
-
-io.on("connection", rootConnection);
-io.of("/chats").on("connection", chatConnection);
