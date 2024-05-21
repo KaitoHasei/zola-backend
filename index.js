@@ -17,7 +17,7 @@ const {
   socketAuthMiddleware,
 } = require("./middleware/authentication.middleware");
 
-require('aws-sdk/lib/maintenance_mode_message').suppress = true;
+require("aws-sdk/lib/maintenance_mode_message").suppress = true;
 
 //route
 const auth = require("./routes/auth");
@@ -38,7 +38,8 @@ const s3 = new S3({
 const prisma = new PrismaClient();
 
 const app = express();
-const httpServer = createServer(app);
+// const httpServer = createServer(app);
+const httpServer = app.listen(config.PORT);
 
 const io = socket(httpServer);
 
@@ -77,7 +78,3 @@ app.use("/api/v1", auth);
 app.use("/api/v1", user);
 app.use("/api/v1", conversation);
 app.use("/api/v1", contact);
-
-app.listen(config.PORT, () => {
-  console.log(`Server is running on http://${config.HOST}:${config.PORT}`);
-});
