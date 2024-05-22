@@ -5,7 +5,7 @@ const {
   updateProfile,
   sendEmailVerification,
   sendPasswordResetEmail,
-  signOut
+  signOut,
 } = require("firebase/auth");
 const { getAuth: getAuthAdmin } = require("firebase-admin/auth");
 
@@ -101,14 +101,14 @@ exports.forgotPassword = async (req, res) => {
   try {
     const auth = getAuth();
     const actionCodeSettings = {
-      url: 'http://localhost:3000/login', 
+      url: "http://localhost:3000/login",
       handleCodeInApp: true,
     };
     await sendPasswordResetEmail(auth, email, actionCodeSettings);
 
     res.status(200).json({ message: "Password reset email sent successfully" });
   } catch (error) {
-    console.log("error : ", error)
+    console.log("error : ", error);
     const { code } = error;
     if (code === "auth/user-not-found") {
       res.status(404).json({ error: "User not found" });
@@ -121,12 +121,16 @@ exports.forgotPassword = async (req, res) => {
 exports.logout = async (req, res) => {
   try {
     const auth = getAuth();
-    
-    await signOut(auth); 
 
-    res.status(200).json({ success: true, message: "User logged out successfully" });
+    await signOut(auth);
+
+    res
+      .status(200)
+      .json({ success: true, message: "User logged out successfully" });
   } catch (error) {
     console.error("Logout error:", error);
-    res.status(500).json({ success: false, error: "An error occurred while logging out" });
+    res
+      .status(500)
+      .json({ success: false, error: "An error occurred while logging out" });
   }
 };

@@ -64,8 +64,24 @@ exports.post = async (req, res) => {
         },
         select: {
           id: true,
+          participantIds: true,
+          participants: {
+            select: {
+              id: true,
+              displayName: true,
+              photoUrl: true,
+            },
+          },
+          userSeen: true,
+          isGroup: true,
+          groupName: true,
+          groupImage: true,
+          groupOwner: true,
+          updatedAt: true,
         },
       });
+
+      io.to(conversation.participantIds).emit("group_created", conversation);
 
       conversationId = conversation.id;
     }
@@ -119,7 +135,7 @@ exports.list = async (req, res) => {
         { $addFields: { latestMessage: { $last: "$message" } } },
         {
           $project: {
-            participantIds: 0,
+            // participantIds: 0,
             message: 0,
             createdAt: 0,
           },
@@ -155,6 +171,7 @@ exports.get = async (req, res) => {
       },
       select: {
         id: true,
+        participantIds: true,
         participants: {
           select: {
             id: true,
@@ -162,12 +179,11 @@ exports.get = async (req, res) => {
             photoUrl: true,
           },
         },
+        userSeen: true,
         isGroup: true,
         groupName: true,
         groupImage: true,
         groupOwner: true,
-        userSeen: true,
-        createdAt: true,
         updatedAt: true,
       },
     });
@@ -185,155 +201,118 @@ exports.get = async (req, res) => {
   }
 };
 
-exports.updateGroupImage = async (req, res) => {
-  const { session, io, s3 } = req.context;
+exports.updateConversation = async (req, res) => {
+  const { session, prisma, io, s3 } = req.context;
   const { conversationId } = req.params;
+  const { groupName = "" } = req.body;
   const groupImage = req.file;
 
   try {
-    if (!groupImage?.buffer) throw { code: "empty-file" };
-
-    const conversation = await prisma.conversation.findUnique({
+    const conversationById = await prisma.conversation.findUnique({
       where: {
         id: conversationId,
       },
       select: {
         id: true,
-        groupOwner: true,
-      },
-    });
-
-    if (!conversation || conversation.groupOwner !== session.id)
-      throw { code: "invalid-conversationId" };
-
-    const params = {
-      Bucket: config.AWS_S3_BUCKET_NAME,
-      Key: `conversations/${conversationId}/avatars/avatarGroup-${Date.now()}`,
-      Body: groupImage.buffer,
-      ContentType: groupImage.mimetype,
-    };
-
-    const avatarUploaded = await s3.upload(params).promise();
-
-    const conversationUpdated = await prisma.conversation.update({
-      where: {
-        id: conversationId,
-      },
-      data: {
-        groupImage: avatarUploaded.Location,
-      },
-      select: {
-        id: true,
-        participantIds: true,
-        participants: {
-          select: {
-            id: true,
-            displayName: true,
-            photoUrl: true,
-          },
-        },
-        userSeen: true,
         isGroup: true,
-        groupName: true,
-        groupImage: true,
-        groupOwner: true,
-        updatedAt: true,
-      },
-    });
-
-    io.to(conversationUpdated.participantIds).emit(
-      "conversation_updated",
-      conversationUpdated
-    );
-
-    return res.status(200).json(conversationUpdated);
-  } catch (error) {
-    const { code } = error;
-    if (code === "empty-file") return res.status(403).json({ error: { code } });
-    if (code === "invalid-conversationId")
-      return res.status(400).json({ error: { code } });
-    return res.status(500).json({ error: { code: "something went wrong!" } });
-  }
-};
-
-exports.updateGroup = async (req, res) => {
-  const { session, io } = req.context;
-  const { conversationId } = req.params;
-  const { groupName } = req.body;
-
-  try {
-    const conversation = await prisma.conversation.findUnique({
-      where: {
-        id: conversationId,
-      },
-      select: {
-        id: true,
         groupOwner: true,
       },
     });
 
-    if (!conversation || conversation.groupOwner !== session.id)
-      throw { code: "invalid-conversationId" };
+    if (!conversationById) throw { code: "invalid-conversationId" };
 
-    const conversationUpdated = await prisma.conversation.update({
-      where: {
-        id: conversationId,
-      },
-      data: {
-        groupName,
-      },
-      select: {
-        id: true,
-        participantIds: true,
-        participants: {
-          select: {
-            id: true,
-            displayName: true,
-            photoUrl: true,
-          },
+    if (conversationById.isGroup) {
+      if (conversationById.groupOwner !== session.id)
+        throw { code: "invalid-conversationId" };
+
+      let data = {};
+
+      if (groupImage?.buffer) {
+        const params = {
+          Bucket: config.AWS_S3_BUCKET_NAME,
+          Key: `conversations/${conversationId}/avatars/avatarGroup-${Date.now()}`,
+          Body: groupImage.buffer,
+          ContentType: groupImage.mimetype,
+        };
+
+        const groupImageUploaded = await s3.upload(params).promise();
+
+        data["groupImage"] = groupImageUploaded.Location;
+      }
+
+      if (groupName.trim()) {
+        data["groupName"] = groupName;
+      }
+
+      const conversationUpdated = await prisma.conversation.update({
+        where: {
+          id: conversationId,
         },
-        userSeen: true,
-        isGroup: true,
-        groupName: true,
-        groupImage: true,
-        groupOwner: true,
-        updatedAt: true,
-      },
-    });
+        data,
+        select: {
+          id: true,
+          participantIds: true,
+          participants: {
+            select: {
+              id: true,
+              displayName: true,
+              photoUrl: true,
+            },
+          },
+          userSeen: true,
+          isGroup: true,
+          groupName: true,
+          groupImage: true,
+          groupOwner: true,
+          updatedAt: true,
+        },
+      });
 
-    io.to(conversationUpdated.participantIds).emit(
-      "conversation_updated",
-      conversationUpdated
-    );
+      io.to(conversationUpdated.participantIds).emit(
+        "conversation_updated",
+        conversationUpdated
+      );
 
-    return res.status(200).json(conversationUpdated);
+      return res.status(200).json(conversationUpdated);
+    }
+
+    return res.status(200).json({});
   } catch (error) {
     const { code } = error;
 
     if (code === "invalid-conversationId")
       return res.status(400).json({ error: { code } });
+
     return res.status(500).json({ error: { code: "something went wrong!" } });
   }
 };
 
 exports.addGroupMembers = async (req, res) => {
-  const { session, io } = req.context;
+  const { io } = req.context;
   const { conversationId = "" } = req.params;
   const { participantIds = [] } = req.body;
 
   try {
-    if (!_.isArray(participantIds)) throw { code: "invalid-params" };
-
-    const conversation = await prisma.conversation.findUnique({
+    const conversationById = await prisma.conversation.findUnique({
       where: {
         id: conversationId,
       },
+      select: {
+        id: true,
+        participantIds: true,
+        isGroup: true,
+        groupOwner: true,
+      },
     });
 
-    if (!conversation.isGroup || conversation?.groupOwner !== session.id)
-      throw { code: "user-has-not-permission" };
+    if (!conversationById) throw { code: "invalid-conversationId" };
 
-    const _participantIds = conversation.participantIds;
+    if (!_.isArray(participantIds) || _.isEmpty(participantIds))
+      throw { code: "invalid-params" };
+
+    if (!conversationById.isGroup) throw { code: "user-has-not-permission" };
+
+    const _participantIds = conversationById.participantIds;
     const _newParticipantIds = [..._participantIds, ...participantIds];
 
     const conversationUpdated = await prisma.conversation.update({
@@ -370,9 +349,8 @@ exports.addGroupMembers = async (req, res) => {
     return res.status(200).json(conversationUpdated);
   } catch (error) {
     const { code } = error;
-    console.log(error);
 
-    if (code === "invalid-conversationId")
+    if (code === "invalid-conversationId" || code === "invalid-params")
       return res.status(400).json({ error: { code } });
 
     if (code === "user-has-not-permission")
@@ -387,7 +365,7 @@ exports.removeGroupMember = async (req, res) => {
   const { conversationId = "", userId = "" } = req.params;
 
   try {
-    const conversation = await prisma.conversation.findUnique({
+    const conversationById = await prisma.conversation.findUnique({
       where: {
         id: conversationId,
       },
@@ -399,13 +377,18 @@ exports.removeGroupMember = async (req, res) => {
       },
     });
 
-    if (!conversation.isGroup || conversation?.groupOwner !== session.id)
+    if (!conversationById) throw { code: "invalid-conversationId" };
+
+    if (
+      !conversationById.isGroup ||
+      (userId !== session.id && conversationById.groupOwner !== session.id)
+    )
       throw { code: "user-has-not-permission" };
 
-    if (conversation.participantIds.length === 2)
+    if (conversationById.participantIds.length === 3)
       throw { code: "must-least-3-members" };
 
-    const conversationParticipantIds = [...conversation.participantIds];
+    const conversationParticipantIds = [...conversationById.participantIds];
 
     _.remove(conversationParticipantIds, (item) => item === userId);
 
@@ -448,7 +431,60 @@ exports.removeGroupMember = async (req, res) => {
 
     return res.status(200).json(conversationUpdated);
   } catch (error) {
-    console.log(error);
+    const { code } = error;
+
+    if (code === "invalid-conversationId")
+      return res.status(400).json({ error: { code } });
+
+    if (code === "user-has-not-permission" || code === "must-least-3-members")
+      return res.status(403).json({ error: { code } });
+
+    return res.status(500).json({ error: { code: "something went wrong" } });
+  }
+};
+
+exports.disbandGroup = async (req, res) => {
+  const { session, io } = req.context;
+  const { conversationId } = req.params;
+
+  try {
+    const conversationById = await prisma.conversation.findUnique({
+      where: {
+        id: conversationId,
+      },
+      select: {
+        id: true,
+        participantIds: true,
+        isGroup: true,
+        groupOwner: true,
+      },
+    });
+
+    if (!conversationById) throw { code: "invalid-conversationId" };
+
+    if (!conversationById.isGroup || conversationById.groupOwner !== session.id)
+      throw { code: "user-has-not-permission" };
+
+    await prisma.conversation.delete({
+      where: {
+        id: conversationId,
+      },
+    });
+
+    io.to(conversationById.participantIds).emit("removed_from-group", {
+      id: conversationById.id,
+    });
+
+    return res.status(200).end();
+  } catch (error) {
+    const { code } = error;
+
+    if (code === "invalid-conversationId")
+      return res.status(400).json({ error: { code } });
+
+    if (code === "user-has-not-permission" || code === "must-least-3-members")
+      return res.status(403).json({ error: { code } });
+
     return res.status(500).json({ error: { code: "something went wrong" } });
   }
 };

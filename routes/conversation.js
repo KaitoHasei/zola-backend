@@ -23,9 +23,12 @@ router
   .patch(
     authenticationMiddleware,
     avatarUploadMiddleware,
-    conversationController.updateGroupImage
-  )
-  .put(authenticationMiddleware, conversationController.updateGroup);
+    conversationController.updateConversation
+  );
+
+router
+  .route("/conversations/group/:conversationId")
+  .delete(authenticationMiddleware, conversationController.disbandGroup);
 
 router
   .route("/conversations/:conversationId/group-member")
